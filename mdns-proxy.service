@@ -1,6 +1,6 @@
 [Unit]
 Description=mDNS Proxy
-After=network.target
+After=network-online.target
 
 [Service]
 ExecStart=/bin/bash -c "/usr/local/bin/mdns-proxy.py $(hostname) $(hostname -I | cut -d' ' -f1)"
