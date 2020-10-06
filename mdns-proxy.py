@@ -17,9 +17,9 @@ class SlimDNSResolver:
         ip_bytes = self._server.resolve_mdns_address(hostname)
         if not ip_bytes:
             return None
-        address = ".".join(str(i) for i in ip_bytes) 
+        address = ".".join(str(i) for i in ip_bytes)
         return address # XXX.XXX.XXX.XXX
-        
+
 class AvahiResolver:
     def resolve(self,hostname,timeout=1):
         try:
@@ -32,7 +32,7 @@ class AvahiResolver:
             raise
 
 class MulticastDNSProxyResolver(BaseResolver):
-    def __init__(self,mdns_resolver=None,dns_address='8.8.8.8',dns_port=53,timeout=1):
+    def __init__(self,mdns_resolver=None,dns_address='1.1.1.1',dns_port=53,timeout=1):
         self._mdns_resolver = mdns_resolver
         self.address = dns_address
         self.port = dns_port
@@ -41,12 +41,12 @@ class MulticastDNSProxyResolver(BaseResolver):
     def resolve(self,request,handler):
         if request.q.qtype != QTYPE.A: # Only IPv4 is supported
             reply = request.reply()
-            reply.header.rcode = getattr(RCODE,'NXDOMAIN')
-            return reply       
+            reply.header.rcode = RCODE.NOERROR
+            return reply
         hostname = str(request.q.qname)
         if hostname.endswith(".local."):
             reply = request.reply()
-            address = address = self._mdns_resolver.resolve(hostname)
+            address = self._mdns_resolver.resolve(hostname)
             if address:
                 rr = RR(
                     rname=request.q.qname,
@@ -56,20 +56,16 @@ class MulticastDNSProxyResolver(BaseResolver):
                 )
                 reply.add_answer(rr)
             else:
-                reply.header.rcode = getattr(RCODE,'NXDOMAIN')
-            return reply 
+                reply.header.rcode = RCODE.NXDOMAIN
+            return reply
         else:
-            try:
-                if handler.protocol == 'udp':
-                    proxy_r = request.send(self.address,self.port,timeout=self.timeout)
-                else:
-                    proxy_r = request.send(self.address,self.port,tcp=True,timeout=self.timeout)
-                reply = DNSRecord.parse(proxy_r)
-            except socket.timeout:
-                reply = request.reply()
-                reply.header.rcode = getattr(RCODE,'NXDOMAIN')
-            return reply              
-        
+            if handler.protocol == 'udp':
+                proxy_r = request.send(self.address,self.port,timeout=self.timeout)
+            else:
+                proxy_r = request.send(self.address,self.port,tcp=True,timeout=self.timeout)
+            reply = DNSRecord.parse(proxy_r)
+            return reply
+
 if __name__ == '__main__':
     if len(sys.argv) < 2:
         print('Usage: {} hostname address'.format(sys.argv[0]))
@@ -81,14 +77,14 @@ if __name__ == '__main__':
 
     dns_address = '208.67.222.222'
     dns_port = 5353
-    
+
     print("Hostname: {}".format(hostname))
     print("Address: {}".format(address))
     print("DNS Address: {}".format(dns_address))
     print("DNS port: {}".format(dns_port))
-    
+
     avahi_coex = False # TODO enable/disable coexist with avahi-daemon
-    
+
     if avahi_coex:
         print("Using AvahiResolver")
         mdns_resolver = AvahiResolver()
@@ -101,15 +97,14 @@ if __name__ == '__main__':
         mdns_server_thread.start()
 
     resolver = MulticastDNSProxyResolver(mdns_resolver, dns_address, dns_port)
-    
+
     servers = [
-        DNSServer(resolver=resolver, port=53, address='127.0.0.1', tcp=False)
-        #DNSServer(resolver=resolver, port=53, address=address, tcp=False) # TODO enable/disable listen on address
+        DNSServer(resolver=resolver, port=53, address=address, tcp=False)
     ]
-    
+
     for s in servers:
         s.start_thread()
-  
+
     try:
         while True:
             sleep(10)
