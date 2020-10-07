@@ -20,19 +20,8 @@ class SlimDNSResolver:
         address = ".".join(str(i) for i in ip_bytes)
         return address # XXX.XXX.XXX.XXX
 
-class AvahiResolver:
-    def resolve(self,hostname,timeout=1):
-        try:
-            result = subprocess.check_output(["avahi-resolve", "--name", "-4", hostname], timeout=timeout)
-            [_, address] = result.decode("UTF-8").strip("\n").split("\t")
-            return address # XXX.XXX.XXX.XXX
-        except subprocess.TimeoutExpired:
-            return None
-        except BaseException:
-            raise
-
 class MulticastDNSProxyResolver(BaseResolver):
-    def __init__(self,mdns_resolver=None,dns_address='1.1.1.1',dns_port=53,timeout=1):
+    def __init__(self,mdns_resolver=None,dns_address='208.67.222.222',dns_port=53,timeout=1):
         self._mdns_resolver = mdns_resolver
         self.address = dns_address
         self.port = dns_port
@@ -46,7 +35,7 @@ class MulticastDNSProxyResolver(BaseResolver):
         hostname = str(request.q.qname)
         if hostname.endswith(".local."):
             reply = request.reply()
-            address = self._mdns_resolver.resolve(hostname)
+            address = address = self._mdns_resolver.resolve(hostname)
             if address:
                 rr = RR(
                     rname=request.q.qname,
@@ -58,13 +47,12 @@ class MulticastDNSProxyResolver(BaseResolver):
             else:
                 reply.header.rcode = RCODE.NXDOMAIN
             return reply
+        if handler.protocol == 'udp':
+            proxy_r = request.send(self.address,self.port,timeout=self.timeout)
         else:
-            if handler.protocol == 'udp':
-                proxy_r = request.send(self.address,self.port,timeout=self.timeout)
-            else:
-                proxy_r = request.send(self.address,self.port,tcp=True,timeout=self.timeout)
-            reply = DNSRecord.parse(proxy_r)
-            return reply
+            proxy_r = request.send(self.address,self.port,tcp=True,timeout=self.timeout)
+        reply = DNSRecord.parse(proxy_r)
+        return reply
 
 if __name__ == '__main__':
     if len(sys.argv) < 2:
@@ -76,30 +64,24 @@ if __name__ == '__main__':
         address = sys.argv[2]
 
     dns_address = '208.67.222.222'
-    dns_port = 5353
+    dns_port = 443
 
     print("Hostname: {}".format(hostname))
     print("Address: {}".format(address))
     print("DNS Address: {}".format(dns_address))
     print("DNS port: {}".format(dns_port))
 
-    avahi_coex = False # TODO enable/disable coexist with avahi-daemon
-
-    if avahi_coex:
-        print("Using AvahiResolver")
-        mdns_resolver = AvahiResolver()
-    else:
-        print("Using SlimDNSResolver")
-        mdns_server = SlimDNSServer(address, hostname)
-        mdns_resolver = SlimDNSResolver(mdns_server)
-        print("Publishing hostname on multicast DNS")
-        mdns_server_thread = threading.Thread(target=mdns_server.run_forever) # TODO Stop thread properly
-        mdns_server_thread.start()
+    print("Using SlimDNSResolver")
+    mdns_server = SlimDNSServer(address, hostname)
+    mdns_resolver = SlimDNSResolver(mdns_server)
+    print("Publishing hostname on multicast DNS")
+    mdns_server_thread = threading.Thread(target=mdns_server.run_forever) # TODO Stop thread properly
+    mdns_server_thread.start()
 
     resolver = MulticastDNSProxyResolver(mdns_resolver, dns_address, dns_port)
 
     servers = [
-        DNSServer(resolver=resolver, port=53, address=address, tcp=False)
+        DNSServer(resolver=resolver, port=53, address="0.0.0.0", tcp=False)
     ]
 
     for s in servers:
