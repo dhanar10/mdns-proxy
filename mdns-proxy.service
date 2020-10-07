@@ -3,7 +3,7 @@ Description=mDNS Proxy
 After=network-online.target
 
 [Service]
-ExecStart=/bin/bash -c "/usr/local/bin/mdns-proxy.py $(hostname) $(hostname -I | cut -d' ' -f1)"
+ExecStart=/bin/bash -c "/usr/local/bin/mdns-proxy.py $(hostname -I | cut -d' ' -f1) $(hostname)"
 StandardOutput=null
 
 [Install]

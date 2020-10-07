@@ -21,7 +21,7 @@ class SlimDNSResolver:
         return address # XXX.XXX.XXX.XXX
 
 class MulticastDNSProxyResolver(BaseResolver):
-    def __init__(self,mdns_resolver=None,dns_address='208.67.222.222',dns_port=53,timeout=1):
+    def __init__(self,mdns_resolver=None,dns_address='8.8.8.8',dns_port=53,timeout=1):
         self._mdns_resolver = mdns_resolver
         self.address = dns_address
         self.port = dns_port
@@ -55,26 +55,27 @@ class MulticastDNSProxyResolver(BaseResolver):
         return reply
 
 if __name__ == '__main__':
-    if len(sys.argv) < 2:
-        print('Usage: {} hostname address'.format(sys.argv[0]))
-        sys.exit(1)
-
     if len(sys.argv) >= 3:
-        hostname = sys.argv[1]
-        address = sys.argv[2]
+        local_address = sys.argv[1]
+        hostname = sys.argv[2]
+    elif len(sys.argv) >= 2:
+        local_address = sys.argv[1]
+        hostname = None
+    else:
+        print('Usage: {} LOCAL_ADDRESS [HOSTNAME]'.format(sys.argv[0]))
+        sys.exit(1) 
 
     dns_address = '208.67.222.222'
     dns_port = 443
 
+    print("Local IP: {}".format(local_address))
     print("Hostname: {}".format(hostname))
-    print("Address: {}".format(address))
-    print("DNS Address: {}".format(dns_address))
-    print("DNS port: {}".format(dns_port))
+    print("Upstream DNS IP: {}".format(dns_address))
+    print("Upstream DNS port: {}".format(dns_port))
 
-    print("Using SlimDNSResolver")
-    mdns_server = SlimDNSServer(address, hostname)
+    mdns_server = SlimDNSServer(local_address, hostname)
     mdns_resolver = SlimDNSResolver(mdns_server)
-    print("Publishing hostname on multicast DNS")
+
     mdns_server_thread = threading.Thread(target=mdns_server.run_forever) # TODO Stop thread properly
     mdns_server_thread.start()
 
@@ -97,3 +98,4 @@ if __name__ == '__main__':
     finally:
         for s in servers:
             s.stop()
+
