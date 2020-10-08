@@ -22,8 +22,7 @@ wget -c "$MDNS_PROXY_PY_URL"
 wget -c "$SLIMDNS_PY_URL"
 
 apt-get update
-apt-get install -y python3-pip
-pip3 install dnslib
+apt-get install -y python3-dnslib
 
 SITE_PACKAGES_DIR="$(python3 -c 'import site; print(site.getsitepackages()[0])')"
 cp slimDNS.py "$SITE_PACKAGES_DIR"
