@@ -10,7 +10,7 @@ fi
 
 MDNS_PROXY_PY_URL="https://raw.githubusercontent.com/dhanar10/mdns-proxy/master/mdns-proxy.py"
 MDNS_PROXY_SERVICE_URL="https://raw.githubusercontent.com/dhanar10/mdns-proxy/master/mdns-proxy.service"
-SLIMDNS_PY_URL="https://raw.githubusercontent.com/dhanar10-forks/slimDNS-py3/076c98e53e8218e4c6491eafef9f9545dc8e78d5/slimDNS.py"
+SLIMDNS_PY_URL="https://raw.githubusercontent.com/dhanar10-forks/slimDNS-py3/224a5e76f82cfd933c1485a11c05b3d999ebb353/slimDNS.py"
 
 TEMP_DIR="$(mktemp -d)"
 
