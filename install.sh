@@ -19,7 +19,6 @@ trap "rm -rf $TEMP_DIR" EXIT
 cd $TEMP_DIR
 
 wget -c "$MDNS_PROXY_PY_URL"
-wget -c "$MDNS_PROXY_SERVICE_URL"
 wget -c "$SLIMDNS_PY_URL"
 
 apt-get update
@@ -29,9 +28,12 @@ pip3 install dnslib
 SITE_PACKAGES_DIR="$(python3 -c 'import site; print(site.getsitepackages()[0])')"
 cp slimDNS.py "$SITE_PACKAGES_DIR"
 install -m 755 "mdns-proxy.py" /usr/local/bin
-cp "mdns-proxy.service" /etc/systemd/system
 
-systemctl daemon-reload
-systemctl start mdns-proxy
+if [ -z "$NO_SYSTEMD_SERVICE" ]; then
+	wget -c "$MDNS_PROXY_SERVICE_URL"
+	cp "mdns-proxy.service" /etc/systemd/system
+	systemctl daemon-reload
+	systemctl start mdns-proxy
+fi
 
 cd ..
