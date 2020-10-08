@@ -20,6 +20,17 @@ class SlimDNSResolver:
         address = ".".join(str(i) for i in ip_bytes)
         return address # XXX.XXX.XXX.XXX
 
+class AvahiResolver:
+    def resolve(self,hostname,timeout=1):
+        try:
+            result = subprocess.check_output(["avahi-resolve", "--name", "-4", hostname], timeout=timeout)
+            [_, address] = result.decode("UTF-8").strip("\n").split("\t")
+            return address # XXX.XXX.XXX.XXX
+        except subprocess.TimeoutExpired:
+            return None
+        except BaseException:
+            raise
+
 class MulticastDNSProxyResolver(BaseResolver):
     def __init__(self,mdns_resolver=None,dns_address='8.8.8.8',dns_port=53,timeout=1):
         self._mdns_resolver = mdns_resolver
@@ -72,6 +83,8 @@ if __name__ == '__main__':
     print("Hostname: {}".format(hostname))
     print("Upstream DNS IP: {}".format(dns_address))
     print("Upstream DNS port: {}".format(dns_port))
+
+    #mdns_resolver = AvahiResolver()
 
     mdns_server = SlimDNSServer(local_address, hostname)
     mdns_resolver = SlimDNSResolver(mdns_server)
