@@ -95,7 +95,7 @@ if __name__ == '__main__':
     resolver = MulticastDNSProxyResolver(mdns_resolver, dns_address, dns_port)
 
     servers = [
-        DNSServer(resolver=resolver, port=53, address="0.0.0.0", tcp=False)
+        DNSServer(resolver=resolver, port=53, address=local_address, tcp=False)
     ]
 
     for s in servers:
