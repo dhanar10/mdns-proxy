@@ -32,6 +32,7 @@ if [ -z "$NO_SYSTEMD_SERVICE" ]; then
 	wget -c "$MDNS_PROXY_SERVICE_URL"
 	cp "mdns-proxy.service" /etc/systemd/system
 	systemctl daemon-reload
+	systemctl enable mdns-proxy
 	systemctl start mdns-proxy
 fi
 
